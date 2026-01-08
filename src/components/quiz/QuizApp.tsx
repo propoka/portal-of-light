@@ -106,8 +106,8 @@ const QuizApp = () => {
         onVideoEnd={handleVideoEnd}
       />
       
-      {/* Dark gradient overlay for readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-background/20 to-background/30 z-10" />
+      {/* Minimal overlay for text readability */}
+      <div className="absolute inset-0 bg-black/10 z-10" />
       
       {/* UI Content Layer */}
       <div className={`relative z-30 transition-opacity duration-200 ${showUI ? 'opacity-100' : 'opacity-0'}`}>
