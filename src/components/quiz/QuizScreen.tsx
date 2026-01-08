@@ -10,9 +10,10 @@ interface QuizScreenProps {
   questionNumber: number;
   totalQuestions: number;
   onAnswer: (answerId: 'A' | 'B' | 'C' | 'D') => void;
+  isFading?: boolean;
 }
 
-const QuizScreen = ({ question, questionNumber, totalQuestions, onAnswer }: QuizScreenProps) => {
+const QuizScreen = ({ question, questionNumber, totalQuestions, onAnswer, isFading = false }: QuizScreenProps) => {
   const [selectedAnswer, setSelectedAnswer] = useState<'A' | 'B' | 'C' | 'D' | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -45,13 +46,18 @@ const QuizScreen = ({ question, questionNumber, totalQuestions, onAnswer }: Quiz
       />
       
       {/* Video Overlay */}
-      <VideoBackground src={goldDust} opacity={0.2 + questionNumber * 0.05} />
+      <VideoBackground src={goldDust} opacity={0.2 + questionNumber * 0.05} className="z-20" />
       
       {/* Dark overlay */}
-      <div className="absolute inset-0 bg-background/30" />
+      <div className="absolute inset-0 bg-background/30 z-30" />
       
       {/* Content */}
-      <div className="relative z-10 w-full max-w-4xl px-8">
+      <div 
+        className={cn(
+          "relative z-40 w-full max-w-4xl px-8 transition-opacity duration-200",
+          isFading && "opacity-0"
+        )}
+      >
         {/* Progress */}
         <div className="text-center mb-8 opacity-0 animate-fade-in" style={{ animationFillMode: 'forwards' }}>
           <span className="text-primary/80 text-sm tracking-widest uppercase">

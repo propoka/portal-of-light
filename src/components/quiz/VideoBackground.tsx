@@ -5,9 +5,10 @@ interface VideoBackgroundProps {
   loop?: boolean;
   opacity?: number;
   onEnded?: () => void;
+  className?: string;
 }
 
-const VideoBackground = ({ src, loop = true, opacity = 0.3, onEnded }: VideoBackgroundProps) => {
+const VideoBackground = ({ src, loop = true, opacity = 0.3, onEnded, className = '' }: VideoBackgroundProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -21,7 +22,7 @@ const VideoBackground = ({ src, loop = true, opacity = 0.3, onEnded }: VideoBack
   return (
     <video
       ref={videoRef}
-      className="video-overlay"
+      className={`video-overlay ${className}`}
       style={{ opacity }}
       autoPlay
       muted

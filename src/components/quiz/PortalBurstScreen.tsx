@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import lightBurst from '@/assets/light-burst.webm';
+import doorVideo from '@/assets/door.webm';
 
 interface PortalBurstScreenProps {
   onComplete: () => void;
@@ -15,8 +15,9 @@ const PortalBurstScreen = ({ onComplete }: PortalBurstScreenProps) => {
 
     const handleCanPlay = () => {
       setIsVideoLoaded(true);
+      // Seek to final burst segment
+      video.currentTime = 1.5;
       video.play().catch(() => {
-        // If autoplay fails, complete after timeout
         setTimeout(onComplete, 2000);
       });
     };
@@ -28,7 +29,6 @@ const PortalBurstScreen = ({ onComplete }: PortalBurstScreenProps) => {
     video.addEventListener('canplay', handleCanPlay);
     video.addEventListener('ended', handleEnded);
 
-    // Fallback timeout in case video doesn't play
     const fallbackTimeout = setTimeout(() => {
       if (!isVideoLoaded) {
         onComplete();
@@ -47,14 +47,14 @@ const PortalBurstScreen = ({ onComplete }: PortalBurstScreenProps) => {
       <video
         ref={videoRef}
         className="absolute inset-0 w-full h-full object-cover"
+        style={{ mixBlendMode: 'screen' }}
         muted
         playsInline
         preload="auto"
       >
-        <source src={lightBurst} type="video/webm" />
+        <source src={doorVideo} type="video/webm" />
       </video>
       
-      {/* Fallback white flash if video not loaded */}
       {!isVideoLoaded && (
         <div className="absolute inset-0 bg-champagne-light animate-pulse" />
       )}
