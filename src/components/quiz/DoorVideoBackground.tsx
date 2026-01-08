@@ -23,14 +23,17 @@ const DoorVideoBackground = ({
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current;
     if (!video || hasReachedTargetRef.current) return;
+    
+    // Only process if we're actively playing
+    if (!isPlayingRef.current) return;
 
     // For playToEnd, let video play naturally
     if (playToEnd) return;
 
     // Check if we've reached target time (with small margin)
-    if (video.currentTime >= targetTime - 0.02) {
+    if (video.currentTime >= targetTime - 0.05) {
       video.pause();
-      video.currentTime = targetTime;
+      // Don't seek - just pause at current position to avoid keyframe snap
       hasReachedTargetRef.current = true;
       isPlayingRef.current = false;
       onReachTarget();
@@ -42,25 +45,6 @@ const DoorVideoBackground = ({
     isPlayingRef.current = false;
     onVideoEnd?.();
   }, [onVideoEnd]);
-
-  const handleLoadedData = useCallback(() => {
-    const video = videoRef.current;
-    if (video && !isPlayingRef.current) {
-      video.currentTime = targetTime;
-      video.pause();
-    }
-  }, [targetTime]);
-
-  // Sync video position when not playing
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || shouldPlay) return;
-    
-    // Keep video at current targetTime when paused
-    if (Math.abs(video.currentTime - targetTime) > 0.1) {
-      video.currentTime = targetTime;
-    }
-  }, [targetTime, shouldPlay]);
 
   // Handle play trigger
   useEffect(() => {
@@ -86,13 +70,16 @@ const DoorVideoBackground = ({
     }
   }, [shouldPlay, playToEnd, onReachTarget, onVideoEnd]);
 
-  // Initial pause on mount
+  // Only seek to 0 for restart/landing - safe because 0 is always a keyframe
   useEffect(() => {
     const video = videoRef.current;
-    if (video) {
+    if (!video) return;
+    
+    if (!shouldPlay && targetTime === 0 && video.currentTime > 0.1) {
+      video.currentTime = 0;
       video.pause();
     }
-  }, []);
+  }, [shouldPlay, targetTime]);
 
   return (
     <video
@@ -103,7 +90,6 @@ const DoorVideoBackground = ({
       preload="auto"
       onTimeUpdate={handleTimeUpdate}
       onEnded={handleEnded}
-      onLoadedData={handleLoadedData}
     >
       <source src={doorVideo} type="video/webm" />
     </video>
