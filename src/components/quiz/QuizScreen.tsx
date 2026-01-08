@@ -1,8 +1,5 @@
 import { useState } from 'react';
 import { QuizQuestion } from '@/data/quizData';
-import VideoBackground from './VideoBackground';
-import goldDust from '@/assets/gold-dust.webm';
-import bgDark from '@/assets/quiz1.png';
 import { cn } from '@/lib/utils';
 
 interface QuizScreenProps {
@@ -16,9 +13,6 @@ interface QuizScreenProps {
 const QuizScreen = ({ question, questionNumber, totalQuestions, onAnswer, isFading = false }: QuizScreenProps) => {
   const [selectedAnswer, setSelectedAnswer] = useState<'A' | 'B' | 'C' | 'D' | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-
-  // Progressive brightness based on question number
-  const brightness = 1 + (questionNumber - 1) * 0.08;
 
   const handleSelectAnswer = (answerId: 'A' | 'B' | 'C' | 'D') => {
     if (isTransitioning) return;
@@ -35,26 +29,11 @@ const QuizScreen = ({ question, questionNumber, totalQuestions, onAnswer, isFadi
   };
 
   return (
-    <div 
-      className="quiz-container flex items-center justify-center"
-      style={{ filter: `brightness(${brightness})` }}
-    >
-      {/* Background Image */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${bgDark})` }}
-      />
-      
-      {/* Video Overlay */}
-      <VideoBackground src={goldDust} opacity={0.2 + questionNumber * 0.05} className="z-20" />
-      
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-background/30 z-30" />
-      
-      {/* Content */}
+    <div className="min-h-screen w-full flex items-center justify-center">
+      {/* Content - no background, parent handles video + overlays */}
       <div 
         className={cn(
-          "relative z-40 w-full max-w-4xl px-8 transition-opacity duration-200",
+          "relative z-10 w-full max-w-4xl px-8 transition-opacity duration-200",
           isFading && "opacity-0"
         )}
       >
