@@ -43,6 +43,25 @@ const DoorVideoBackground = ({
     onVideoEnd?.();
   }, [onVideoEnd]);
 
+  const handleLoadedData = useCallback(() => {
+    const video = videoRef.current;
+    if (video && !isPlayingRef.current) {
+      video.currentTime = targetTime;
+      video.pause();
+    }
+  }, [targetTime]);
+
+  // Sync video position when not playing
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || shouldPlay) return;
+    
+    // Keep video at current targetTime when paused
+    if (Math.abs(video.currentTime - targetTime) > 0.1) {
+      video.currentTime = targetTime;
+    }
+  }, [targetTime, shouldPlay]);
+
   // Handle play trigger
   useEffect(() => {
     const video = videoRef.current;
@@ -67,11 +86,10 @@ const DoorVideoBackground = ({
     }
   }, [shouldPlay, playToEnd, onReachTarget, onVideoEnd]);
 
-  // Initial seek on mount
+  // Initial pause on mount
   useEffect(() => {
     const video = videoRef.current;
-    if (video && video.readyState >= 1) {
-      video.currentTime = 0;
+    if (video) {
       video.pause();
     }
   }, []);
@@ -85,6 +103,7 @@ const DoorVideoBackground = ({
       preload="auto"
       onTimeUpdate={handleTimeUpdate}
       onEnded={handleEnded}
+      onLoadedData={handleLoadedData}
     >
       <source src={doorVideo} type="video/webm" />
     </video>

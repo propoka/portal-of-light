@@ -4,9 +4,6 @@ import LandingScreen from './LandingScreen';
 import QuizScreen from './QuizScreen';
 import ResultScreen from './ResultScreen';
 import DoorVideoBackground from './DoorVideoBackground';
-import VideoBackground from './VideoBackground';
-import goldDust from '@/assets/gold-dust.webm';
-import lightBurst from '@/assets/light-burst.webm';
 
 type QuizState = 'landing' | 'quiz' | 'result';
 
@@ -26,14 +23,8 @@ const QuizApp = () => {
   
   // UI visibility state
   const [showUI, setShowUI] = useState(true);
-  const [showLightBurst, setShowLightBurst] = useState(false);
   
   const resultRef = useRef<PersonalityResult | null>(null);
-
-  // Gold dust opacity increases through quiz
-  const goldDustOpacity = state === 'landing' 
-    ? 0.15 
-    : 0.2 + currentQuestion * 0.04;
 
   const handleStart = useCallback(() => {
     setShowUI(false);
@@ -59,14 +50,8 @@ const QuizApp = () => {
   const handleVideoEnd = useCallback(() => {
     setShouldPlayVideo(false);
     setPlayToEnd(false);
-    setShowLightBurst(true);
-    
-    // Show result after light burst
-    setTimeout(() => {
-      setResult(resultRef.current);
-      setState('result');
-      setShowLightBurst(false);
-    }, 800);
+    setResult(resultRef.current);
+    setState('result');
   }, []);
 
   const handleAnswer = useCallback((answerId: 'A' | 'B' | 'C' | 'D') => {
@@ -102,7 +87,6 @@ const QuizApp = () => {
     setShouldPlayVideo(false);
     setPlayToEnd(false);
     setShowUI(true);
-    setShowLightBurst(false);
     resultRef.current = null;
   }, []);
 
@@ -122,25 +106,8 @@ const QuizApp = () => {
         onVideoEnd={handleVideoEnd}
       />
       
-      {/* Gold Dust Overlay */}
-      <VideoBackground 
-        src={goldDust} 
-        opacity={goldDustOpacity} 
-        className="z-10" 
-      />
-      
       {/* Dark gradient overlay for readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-background/30 to-background/40 z-20" />
-      
-      {/* Light Burst Effect (before result) */}
-      {showLightBurst && (
-        <VideoBackground 
-          src={lightBurst} 
-          loop={false}
-          opacity={0.8} 
-          className="z-25" 
-        />
-      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-background/20 to-background/30 z-10" />
       
       {/* UI Content Layer */}
       <div className={`relative z-30 transition-opacity duration-200 ${showUI ? 'opacity-100' : 'opacity-0'}`}>
