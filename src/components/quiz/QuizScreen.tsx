@@ -38,15 +38,15 @@ const QuizScreen = ({ question, questionNumber, totalQuestions, onAnswer, isFadi
         )}
       >
         {/* Progress */}
-        <div className="text-center mb-8 opacity-0 animate-fade-in" style={{ animationFillMode: 'forwards' }}>
+        <div className="text-center mb-8 opacity-0 animate-slide-down-enter" style={{ animationFillMode: 'forwards' }}>
           <span className="text-primary/80 text-sm tracking-widest uppercase">
             Câu {questionNumber}/{totalQuestions}
           </span>
         </div>
 
-        {/* Question */}
+        {/* Question with shimmer */}
         <h2 
-          className="font-display text-3xl md:text-4xl text-center gold-text mb-4 opacity-0 animate-fade-in-up delay-100"
+          className="font-display text-3xl md:text-4xl text-center shimmer-text mb-4 opacity-0 animate-slide-down-enter delay-100"
           style={{ animationFillMode: 'forwards' }}
         >
           {question.question}
@@ -60,7 +60,7 @@ const QuizScreen = ({ question, questionNumber, totalQuestions, onAnswer, isFadi
           {question.microCopy}
         </p>
 
-        {/* Answer Options */}
+        {/* Answer Options with staggered animation */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {question.options.map((option, index) => (
             <button
@@ -68,20 +68,36 @@ const QuizScreen = ({ question, questionNumber, totalQuestions, onAnswer, isFadi
               onClick={() => handleSelectAnswer(option.id)}
               disabled={isTransitioning}
               className={cn(
-                "p-6 rounded-lg border text-left transition-all duration-200",
+                "group p-6 rounded-lg border text-left transition-all duration-300",
                 "opacity-0 animate-scale-in",
                 "border-border/50 bg-card/50 backdrop-blur-sm",
                 "card-hover",
                 selectedAnswer === option.id && "card-selected",
-                isTransitioning && selectedAnswer !== option.id && "opacity-50"
+                isTransitioning && selectedAnswer !== option.id && "opacity-50 scale-98"
               )}
               style={{ 
                 animationFillMode: 'forwards',
-                animationDelay: `${0.2 + index * 0.1}s`
+                animationDelay: `${0.2 + index * 0.08}s`
               }}
             >
-              <span className="text-primary font-semibold mr-3">{option.id}.</span>
-              <span className="text-foreground/90">{option.text}</span>
+              <div className="flex items-center">
+                <span className={cn(
+                  "text-primary font-semibold mr-3 transition-transform duration-300",
+                  "group-hover:scale-110"
+                )}>
+                  {option.id}.
+                </span>
+                <span className="text-foreground/90">{option.text}</span>
+                
+                {/* Checkmark for selected */}
+                {selectedAnswer === option.id && (
+                  <span className="ml-auto text-primary animate-scale-in">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                )}
+              </div>
             </button>
           ))}
         </div>

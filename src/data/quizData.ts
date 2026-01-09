@@ -10,6 +10,16 @@ export interface QuizQuestion {
   options: QuizOption[];
 }
 
+// Door voice messages for each stage
+export const doorVoiceMessages: Record<string, string> = {
+  landing: "Ta đã đợi rất lâu để gặp bạn...",
+  q1: "Bên kia cánh cửa có điều gì đó đang chờ bạn.",
+  q2: "Mỗi bước đi đều có ý nghĩa riêng.",
+  q3: "Bạn đang đến gần hơn rồi.",
+  q4: "Ánh sáng đang dần hé mở.",
+  q5: "Chuẩn bị. Ánh sáng sắp bùng nổ.",
+};
+
 export const quizQuestions: QuizQuestion[] = [
   {
     id: 1,
