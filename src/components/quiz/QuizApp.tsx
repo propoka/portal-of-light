@@ -83,7 +83,7 @@ const QuizApp = () => {
   const resultRef = useRef<PersonalityResult | null>(null);
   
   // Sound effects
-  const { playWhoosh, playDing, startAmbient, stopAmbient, preloadSounds } = useSoundEffects();
+  const { playWhoosh, playDing, playReveal, startAmbient, stopAmbient, preloadSounds } = useSoundEffects();
   
   // Preload sounds on mount
   useEffect(() => {
@@ -144,7 +144,10 @@ const QuizApp = () => {
     setPlayToEnd(false);
     setResult(resultRef.current);
     setState('result');
-  }, []);
+    
+    // Play reveal fanfare when showing result
+    playReveal();
+  }, [playReveal]);
 
   const handleAnswer = useCallback((answerId: 'A' | 'B' | 'C' | 'D') => {
     const questionId = quizQuestions[currentQuestion].id;
