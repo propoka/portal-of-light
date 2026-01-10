@@ -1,4 +1,5 @@
 import { useRef, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -12,81 +13,160 @@ const SOUND_PROMPTS = {
   ambient: "mysterious ambient background music, ethereal dreamy atmosphere, soft golden magical tones, looping",
 };
 
+const SOUND_DURATIONS: Record<string, number> = {
+  whoosh: 2,
+  ding: 2,
+  start: 3,
+  reveal: 4,
+  ambient: 15,
+};
+
 type SoundType = keyof typeof SOUND_PROMPTS;
 
-// Audio cache to avoid regenerating the same sounds
-const audioCache: Record<string, string> = {};
+// In-memory cache for current session
+const memoryCache: Record<string, string> = {};
 // Pending promises to wait for generation
-const pendingGenerations: Record<string, Promise<string | null>> = {};
+const pendingOperations: Record<string, Promise<string | null>> = {};
 
 export const useSoundEffects = () => {
   const ambientAudioRef = useRef<HTMLAudioElement | null>(null);
   const preloadedRef = useRef(false);
 
-  // Generate sound from ElevenLabs with proper queuing
-  const generateSound = useCallback(async (type: SoundType, duration?: number): Promise<string | null> => {
-    const cacheKey = `${type}-${duration || 'auto'}`;
+  // Get public URL for a sound file
+  const getStorageUrl = useCallback((type: SoundType): string => {
+    const { data } = supabase.storage
+      .from('sounds')
+      .getPublicUrl(`${type}.mp3`);
+    return data.publicUrl;
+  }, []);
+
+  // Check if sound exists in storage
+  const checkStorageExists = useCallback(async (type: SoundType): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('sounds')
+        .list('', { search: `${type}.mp3` });
+      
+      if (error) return false;
+      return data.some(file => file.name === `${type}.mp3`);
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // Generate sound from ElevenLabs
+  const generateFromApi = useCallback(async (type: SoundType): Promise<Blob | null> => {
+    try {
+      console.log(`Generating sound from API: ${type}`);
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/elevenlabs-sfx`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+          },
+          body: JSON.stringify({ 
+            prompt: SOUND_PROMPTS[type], 
+            duration: SOUND_DURATIONS[type]
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        console.error(`SFX request failed: ${response.status}`);
+        return null;
+      }
+
+      return await response.blob();
+    } catch (error) {
+      console.error("Error generating sound:", error);
+      return null;
+    }
+  }, []);
+
+  // Upload sound to storage
+  const uploadToStorage = useCallback(async (type: SoundType, blob: Blob): Promise<boolean> => {
+    try {
+      const { error } = await supabase.storage
+        .from('sounds')
+        .upload(`${type}.mp3`, blob, {
+          contentType: 'audio/mpeg',
+          upsert: true
+        });
+
+      if (error) {
+        console.error('Upload error:', error);
+        return false;
+      }
+      
+      console.log(`Sound uploaded to storage: ${type}`);
+      return true;
+    } catch (error) {
+      console.error('Upload error:', error);
+      return false;
+    }
+  }, []);
+
+  // Get or generate sound - checks storage first, generates if needed
+  const getSound = useCallback(async (type: SoundType): Promise<string | null> => {
+    const cacheKey = type;
     
-    // Return cached audio if available
-    if (audioCache[cacheKey]) {
-      return audioCache[cacheKey];
+    // Return from memory cache if available
+    if (memoryCache[cacheKey]) {
+      return memoryCache[cacheKey];
     }
 
-    // If already generating, wait for that promise
-    if (pendingGenerations[cacheKey]) {
-      return pendingGenerations[cacheKey];
+    // If already fetching/generating, wait for that promise
+    if (pendingOperations[cacheKey]) {
+      return pendingOperations[cacheKey];
     }
 
-    // Create new generation promise
-    const generationPromise = (async () => {
+    // Create new operation promise
+    const operationPromise = (async () => {
       try {
-        console.log(`Generating sound: ${type}`);
-        const response = await fetch(
-          `${SUPABASE_URL}/functions/v1/elevenlabs-sfx`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              apikey: SUPABASE_KEY,
-              Authorization: `Bearer ${SUPABASE_KEY}`,
-            },
-            body: JSON.stringify({ 
-              prompt: SOUND_PROMPTS[type], 
-              duration: duration || (type === 'ambient' ? 15 : 2)
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          console.error(`SFX request failed: ${response.status}`);
-          return null;
+        // Check if exists in storage
+        const existsInStorage = await checkStorageExists(type);
+        
+        if (existsInStorage) {
+          // Use storage URL directly
+          const url = getStorageUrl(type);
+          memoryCache[cacheKey] = url;
+          console.log(`Sound loaded from storage: ${type}`);
+          return url;
         }
 
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        audioCache[cacheKey] = audioUrl;
-        console.log(`Sound cached: ${type}`);
+        // Generate from API
+        const audioBlob = await generateFromApi(type);
+        if (!audioBlob) return null;
+
+        // Upload to storage for future use
+        await uploadToStorage(type, audioBlob);
+
+        // Create blob URL for immediate playback
+        const blobUrl = URL.createObjectURL(audioBlob);
+        memoryCache[cacheKey] = blobUrl;
         
-        return audioUrl;
+        return blobUrl;
       } catch (error) {
-        console.error("Error generating sound:", error);
+        console.error("Error getting sound:", error);
         return null;
       } finally {
-        delete pendingGenerations[cacheKey];
+        delete pendingOperations[cacheKey];
       }
     })();
 
-    pendingGenerations[cacheKey] = generationPromise;
-    return generationPromise;
-  }, []);
+    pendingOperations[cacheKey] = operationPromise;
+    return operationPromise;
+  }, [checkStorageExists, getStorageUrl, generateFromApi, uploadToStorage]);
 
   // Play a one-shot sound effect
   const playSound = useCallback(async (type: 'whoosh' | 'ding' | 'start' | 'reveal') => {
     try {
-      const durations: Record<string, number> = { whoosh: 2, ding: 2, start: 3, reveal: 4 };
       const volumes: Record<string, number> = { whoosh: 0.5, ding: 0.6, start: 0.7, reveal: 0.8 };
       
-      const audioUrl = await generateSound(type, durations[type]);
+      const audioUrl = await getSound(type);
       if (audioUrl) {
         const audio = new Audio(audioUrl);
         audio.volume = volumes[type];
@@ -96,7 +176,7 @@ export const useSoundEffects = () => {
     } catch (error) {
       console.error("Error playing sound:", error);
     }
-  }, [generateSound]);
+  }, [getSound]);
 
   // Play transition whoosh
   const playWhoosh = useCallback(() => {
@@ -123,7 +203,7 @@ export const useSoundEffects = () => {
     if (ambientAudioRef.current) return; // Already playing
 
     try {
-      const audioUrl = await generateSound('ambient', 15);
+      const audioUrl = await getSound('ambient');
       if (audioUrl) {
         const audio = new Audio(audioUrl);
         audio.volume = 0.15;
@@ -134,7 +214,7 @@ export const useSoundEffects = () => {
     } catch (error) {
       console.error("Error starting ambient:", error);
     }
-  }, [generateSound]);
+  }, [getSound]);
 
   // Stop ambient music
   const stopAmbient = useCallback(() => {
@@ -144,19 +224,19 @@ export const useSoundEffects = () => {
     }
   }, []);
 
-  // Pre-generate sounds sequentially to avoid rate limits
+  // Pre-load sounds (checks storage first, generates only if needed)
   const preloadSounds = useCallback(async () => {
     if (preloadedRef.current) return;
     preloadedRef.current = true;
     
-    // Generate sounds one by one to avoid rate limits
     console.log('Preloading sounds...');
-    await generateSound('start', 3);
-    await generateSound('ding', 2);
-    await generateSound('reveal', 4);
-    await generateSound('whoosh', 2);
+    // Load sounds sequentially to avoid rate limits
+    await getSound('start');
+    await getSound('ding');
+    await getSound('reveal');
+    await getSound('whoosh');
     console.log('Sounds preloaded!');
-  }, [generateSound]);
+  }, [getSound]);
 
   // Cleanup on unmount
   useEffect(() => {
