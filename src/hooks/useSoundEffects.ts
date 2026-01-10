@@ -7,6 +7,7 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const SOUND_PROMPTS = {
   whoosh: "magical mystical whoosh transition sound effect, ethereal sweep, short 1 second",
   ding: "soft magical chime ding, gentle bell notification, sparkle sound, very short",
+  reveal: "magical reveal fanfare, triumphant discovery sound, golden sparkles and chimes, mystical unveiling, 3 seconds",
   ambient: "mysterious ambient background music, ethereal dreamy atmosphere, soft golden magical tones, looping",
 };
 
@@ -69,12 +70,13 @@ export const useSoundEffects = () => {
   }, []);
 
   // Play a one-shot sound effect
-  const playSound = useCallback(async (type: 'whoosh' | 'ding') => {
+  const playSound = useCallback(async (type: 'whoosh' | 'ding' | 'reveal') => {
     try {
-      const audioUrl = await generateSound(type, 2);
+      const duration = type === 'reveal' ? 3 : 2;
+      const audioUrl = await generateSound(type, duration);
       if (audioUrl) {
         const audio = new Audio(audioUrl);
-        audio.volume = type === 'whoosh' ? 0.4 : 0.5;
+        audio.volume = type === 'whoosh' ? 0.4 : type === 'reveal' ? 0.6 : 0.5;
         await audio.play();
       }
     } catch (error) {
@@ -90,6 +92,11 @@ export const useSoundEffects = () => {
   // Play selection ding
   const playDing = useCallback(() => {
     playSound('ding');
+  }, [playSound]);
+
+  // Play reveal fanfare for result screen
+  const playReveal = useCallback(() => {
+    playSound('reveal');
   }, [playSound]);
 
   // Start ambient background music
@@ -123,6 +130,7 @@ export const useSoundEffects = () => {
     // Generate sounds in background
     generateSound('whoosh', 2);
     generateSound('ding', 2);
+    generateSound('reveal', 3);
   }, [generateSound]);
 
   // Cleanup on unmount
@@ -139,6 +147,7 @@ export const useSoundEffects = () => {
   return {
     playWhoosh,
     playDing,
+    playReveal,
     startAmbient,
     stopAmbient,
     preloadSounds,
