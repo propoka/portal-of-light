@@ -1,1 +1,4 @@
 project_id = "fxanshpbikrkogznoxce"
+
+[functions.elevenlabs-sfx]
+verify_jwt = false

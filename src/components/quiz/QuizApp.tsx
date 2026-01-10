@@ -4,6 +4,7 @@ import LandingScreen from './LandingScreen';
 import QuizScreen from './QuizScreen';
 import ResultScreen from './ResultScreen';
 import DoorVideoBackground from './DoorVideoBackground';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 type QuizState = 'landing' | 'quiz' | 'result';
 
@@ -80,6 +81,14 @@ const QuizApp = () => {
   const [showDoorVoice, setShowDoorVoice] = useState(true);
   
   const resultRef = useRef<PersonalityResult | null>(null);
+  
+  // Sound effects
+  const { playWhoosh, playDing, startAmbient, stopAmbient, preloadSounds } = useSoundEffects();
+  
+  // Preload sounds on mount
+  useEffect(() => {
+    preloadSounds();
+  }, [preloadSounds]);
 
   // Get current door voice message
   const getDoorVoiceMessage = () => {
@@ -103,7 +112,11 @@ const QuizApp = () => {
     setShowDoorVoice(false);
     setVideoTargetTime(1.0); // Play to 1.0s
     setShouldPlayVideo(true);
-  }, []);
+    
+    // Start ambient music and play whoosh
+    startAmbient();
+    playWhoosh();
+  }, [startAmbient, playWhoosh]);
 
   const handleVideoReachTarget = useCallback(() => {
     setShouldPlayVideo(false);
@@ -138,6 +151,9 @@ const QuizApp = () => {
     const newAnswers = { ...answers, [questionId]: answerId };
     setAnswers(newAnswers);
 
+    // Play ding sound on answer selection
+    playDing();
+
     // Fade UI out first
     setShowUI(false);
     setShowDoorVoice(false);
@@ -150,13 +166,16 @@ const QuizApp = () => {
         resultRef.current = calculateResult(newAnswers);
         setPlayToEnd(true);
         setShouldPlayVideo(true);
+        stopAmbient(); // Stop ambient when quiz ends
       } else {
+        // Play whoosh for transition
+        playWhoosh();
         // Set next target time
         setVideoTargetTime(QUESTION_TIMES[currentQuestion + 1]);
         setShouldPlayVideo(true);
       }
     }, 200);
-  }, [currentQuestion, answers]);
+  }, [currentQuestion, answers, playDing, playWhoosh, stopAmbient]);
 
   const handleRestart = useCallback(() => {
     setState('landing');
@@ -169,7 +188,8 @@ const QuizApp = () => {
     setShowUI(true);
     setShowDoorVoice(true);
     resultRef.current = null;
-  }, []);
+    stopAmbient();
+  }, [stopAmbient]);
 
   // Result screen has its own background
   if (state === 'result' && result) {
