@@ -7,7 +7,8 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const SOUND_PROMPTS = {
   whoosh: "magical mystical whoosh transition sound effect, ethereal sweep, short 1 second",
   ding: "soft magical chime ding, gentle bell notification, sparkle sound, very short",
-  reveal: "magical reveal fanfare, triumphant discovery sound, golden sparkles and chimes, mystical unveiling, 3 seconds",
+  start: "magical door opening sound, mystical portal activation, deep resonant gong with sparkling chimes, enchanting beginning",
+  reveal: "epic magical explosion reveal, triumphant orchestral burst, golden fireworks and sparkles, dramatic unveiling fanfare, cinematic climax moment, powerful and majestic, 4 seconds",
   ambient: "mysterious ambient background music, ethereal dreamy atmosphere, soft golden magical tones, looping",
 };
 
@@ -70,13 +71,15 @@ export const useSoundEffects = () => {
   }, []);
 
   // Play a one-shot sound effect
-  const playSound = useCallback(async (type: 'whoosh' | 'ding' | 'reveal') => {
+  const playSound = useCallback(async (type: 'whoosh' | 'ding' | 'start' | 'reveal') => {
     try {
-      const duration = type === 'reveal' ? 3 : 2;
-      const audioUrl = await generateSound(type, duration);
+      const durations: Record<string, number> = { whoosh: 2, ding: 2, start: 3, reveal: 4 };
+      const volumes: Record<string, number> = { whoosh: 0.4, ding: 0.5, start: 0.6, reveal: 0.7 };
+      
+      const audioUrl = await generateSound(type, durations[type]);
       if (audioUrl) {
         const audio = new Audio(audioUrl);
-        audio.volume = type === 'whoosh' ? 0.4 : type === 'reveal' ? 0.6 : 0.5;
+        audio.volume = volumes[type];
         await audio.play();
       }
     } catch (error) {
@@ -94,7 +97,12 @@ export const useSoundEffects = () => {
     playSound('ding');
   }, [playSound]);
 
-  // Play reveal fanfare for result screen
+  // Play start sound for beginning
+  const playStart = useCallback(() => {
+    playSound('start');
+  }, [playSound]);
+
+  // Play epic reveal for result screen
   const playReveal = useCallback(() => {
     playSound('reveal');
   }, [playSound]);
@@ -130,7 +138,8 @@ export const useSoundEffects = () => {
     // Generate sounds in background
     generateSound('whoosh', 2);
     generateSound('ding', 2);
-    generateSound('reveal', 3);
+    generateSound('start', 3);
+    generateSound('reveal', 4);
   }, [generateSound]);
 
   // Cleanup on unmount
@@ -147,6 +156,7 @@ export const useSoundEffects = () => {
   return {
     playWhoosh,
     playDing,
+    playStart,
     playReveal,
     startAmbient,
     stopAmbient,
