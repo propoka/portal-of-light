@@ -83,7 +83,7 @@ const QuizApp = () => {
   const resultRef = useRef<PersonalityResult | null>(null);
   
   // Sound effects
-  const { playWhoosh, playDing, playReveal, startAmbient, stopAmbient, preloadSounds } = useSoundEffects();
+  const { playWhoosh, playDing, playStart, playReveal, startAmbient, stopAmbient, preloadSounds } = useSoundEffects();
   
   // Preload sounds on mount
   useEffect(() => {
@@ -113,10 +113,10 @@ const QuizApp = () => {
     setVideoTargetTime(1.0); // Play to 1.0s
     setShouldPlayVideo(true);
     
-    // Start ambient music and play whoosh
+    // Play start sound and ambient music
+    playStart();
     startAmbient();
-    playWhoosh();
-  }, [startAmbient, playWhoosh]);
+  }, [startAmbient, playStart]);
 
   const handleVideoReachTarget = useCallback(() => {
     setShouldPlayVideo(false);
